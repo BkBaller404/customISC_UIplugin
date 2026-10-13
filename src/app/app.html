@@ -1,0 +1,18 @@
+<div class="shell">
+  <main class="shell-content">
+    <header class="shell-content__header">
+      <h1 class="spds-h4">Find an Identity</h1>
+      <div class="shell-content__meta">
+        <p-tag [value]="'status.' + status() | translate" [severity]="handshakeSeverity[status()]" />
+        @if (context(); as ctx) {
+          <span class="shell-content__context">
+            {{ ctx.tenant.org }} &middot; {{ ctx.user.displayName }}
+          </span>
+        }
+      </div>
+    </header>
+    <div class="shell-content__card">
+      <router-outlet />
+    </div>
+  </main>
+</div>

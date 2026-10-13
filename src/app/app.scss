@@ -1,0 +1,47 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--spds-surface-0);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.shell-content {
+  min-width: 0;
+  background: var(--spds-neutral-500);
+  padding: 1.5rem;
+  padding-left: 2rem;
+
+  &__header {
+    margin-bottom: 1rem;
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-weight: 600;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__context {
+    color: var(--spds-zinc-500);
+    font-size: 0.875rem;
+  }
+
+  &__card {
+    background: var(--spds-surface-0);
+    border-radius: var(--spds-border-radius-lg);
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  }
+}

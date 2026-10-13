@@ -1,0 +1,130 @@
+<section class="explorer">
+  @if (selected(); as identity) {
+    <header class="identity-header">
+      <h2>Identity:{{ displayName(identity) }}</h2>
+      <div class="identity-header__controls">
+        <a class="graph-link" [href]="identityGraphUrl(identity)" target="_blank" rel="noopener noreferrer">
+          <span aria-hidden="true">◉</span> Identity Graph
+        </a>
+        <div class="actions">
+          <button class="actions__trigger" type="button" aria-haspopup="menu" [attr.aria-expanded]="actionsOpen()" (click)="actionsOpen.update(open => !open)">
+            Actions <span aria-hidden="true">⌄</span>
+          </button>
+          @if (actionsOpen()) {
+            <div class="actions__menu" role="menu" aria-label="Identity actions">
+              @for (action of ['Process Identity', 'Set User Levels', 'Delete Identity', 'Synchronize Attributes', 'Set Lifecycle State', 'Disable Identity', 'Reset Identity', 'Reset Password', 'Request Access']; track action) {
+                <button type="button" role="menuitem" (click)="runIdentityAction(action)">{{ action }}</button>
+              }
+              <div class="actions__divider"></div>
+              <button type="button" role="menuitem" disabled>Certify Access</button>
+              <button type="button" role="menuitem" disabled>Validate User</button>
+            </div>
+          }
+        </div>
+        <button class="exit-button" type="button" title="Exit to identity search" aria-label="Exit to identity search" (click)="closeIdentity()">×</button>
+      </div>
+    </header>
+
+    @if (actionNotice()) { <p class="notice notice--success" role="status">{{ actionNotice() }}</p> }
+    @if (panelError()) { <p class="notice" role="alert">{{ panelError() }}</p> }
+
+    <div class="profile-summary">
+      <div class="profile-summary__person">
+        <span class="profile-summary__avatar">{{ displayName(identity).slice(0, 1).toUpperCase() }}</span>
+        <div><strong>{{ displayName(identity) }}</strong><span>{{ identity.email || identity.name || identity.id }}</span></div>
+      </div>
+      <span class="identity-state">{{ identityState(identity) }}</span>
+    </div>
+
+    <nav class="tabs" aria-label="Identity details">
+      <button type="button" [class.tabs__active]="activeTab() === 'profile'" (click)="showTab('profile')">Attributes</button>
+      <button type="button" [class.tabs__active]="activeTab() === 'accounts'" (click)="showTab('accounts')">Source accounts</button>
+      <button type="button" [class.tabs__active]="activeTab() === 'activity'" (click)="showTab('activity')">Account activity</button>
+    </nav>
+
+    @if (detailLoading() || panelLoading()) {
+      <p class="muted">Loading identity data...</p>
+    } @else if (activeTab() === 'profile') {
+      <dl class="attributes">
+        @for (field of fields(); track field[0]) {
+          <div><dt>{{ field[0] }}</dt><dd>{{ field[1] }}</dd><button class="copy-button" type="button" [attr.aria-label]="'Copy ' + field[0]" (click)="copy(field[1])">⧉</button></div>
+        } @empty {
+          <p class="muted">No displayable attributes were returned for this identity.</p>
+        }
+      </dl>
+    } @else if (activeTab() === 'accounts') {
+      <div class="table-wrap"><table>
+        <thead><tr><th>Account</th><th>Source</th><th>Native identity</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+          @for (account of accounts(); track account.id || account.nativeIdentity) {
+            <tr><td>{{ account.name || account.id || 'Account' }}</td><td>{{ account.sourceName || '—' }}</td><td>{{ account.nativeIdentity || '—' }}</td><td>{{ account.disabled ? 'Disabled' : 'Active' }}</td><td>@if (account.id) { <button class="table-action" type="button" [disabled]="actionBusyId() !== null" (click)="toggleAccount(account)">{{ actionBusyId() === account.id ? 'Submitting...' : account.disabled ? 'Enable' : 'Disable' }}</button> }</td></tr>
+          } @empty { <tr><td colspan="5" class="muted">No source accounts returned.</td></tr> }
+        </tbody>
+      </table></div>
+    } @else {
+      <div class="table-wrap"><table>
+        <thead><tr><th>Activity</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          @for (activity of activities(); track activity.id || activity.created) {
+            <tr><td>{{ activity.name || activity.type || activity.id || 'Account activity' }}</td><td>{{ activity.executionStatus || activity.completionStatus || '—' }}</td><td>{{ activity.created || '—' }}</td></tr>
+          } @empty { <tr><td colspan="3" class="muted">No account activity returned.</td></tr> }
+        </tbody>
+      </table></div>
+    }
+
+    @if (accessDialogOpen()) {
+      <div class="dialog-backdrop" (click)="accessDialogOpen.set(false)">
+        <section class="access-dialog" role="dialog" aria-modal="true" aria-labelledby="access-dialog-title" (click)="$event.stopPropagation()">
+          <header><h3 id="access-dialog-title">Request access for {{ displayName(identity) }}</h3><button type="button" aria-label="Close" (click)="accessDialogOpen.set(false)">×</button></header>
+          <label for="access-search">Search roles, access profiles, and entitlements</label>
+          <div class="access-search"><input id="access-search" type="search" [ngModel]="accessQuery()" (ngModelChange)="accessQuery.set($event)" (keydown.enter)="$event.preventDefault(); searchAccessItems()" /><button type="button" [disabled]="accessLoading()" (click)="searchAccessItems()">{{ accessLoading() ? 'Searching...' : 'Search' }}</button></div>
+          @if (panelError()) { <p class="notice" role="alert">{{ panelError() }}</p> }
+          <ul class="access-results">
+            @for (item of accessItems(); track item.id) {
+              <li><button type="button" [class.access-results__selected]="selectedAccessItem()?.id === item.id" (click)="selectedAccessItem.set(item)"><span>{{ item.displayName || item.name || item.id }}</span><small>{{ item.type }}</small></button></li>
+            } @empty { <li class="muted">Search to find requestable access.</li> }
+          </ul>
+          <footer><button class="secondary-button" type="button" (click)="accessDialogOpen.set(false)">Cancel</button><button class="primary-button" type="button" [disabled]="!selectedAccessItem() || accessSubmitting()" (click)="submitAccessRequest()">{{ accessSubmitting() ? 'Submitting...' : 'Submit request' }}</button></footer>
+        </section>
+      </div>
+    }
+  } @else {
+    <section class="search">
+      <label for="identity-query">Find an identity</label>
+      <div class="search__controls">
+        <input id="identity-query" name="query" type="search" autocomplete="off"
+          placeholder="First name, last name, email, or alias"
+          [ngModel]="query()" (ngModelChange)="query.set($event)" (keydown.enter)="$event.preventDefault(); search()" />
+        <button type="button" [disabled]="loading()" (click)="search()">
+          {{ loading() ? 'Searching...' : 'Search identities' }}
+        </button>
+      </div>
+    </section>
+    @if (error()) { <p class="notice" role="alert">{{ error() }}</p> }
+    <section class="results results--search" aria-label="Identity search results">
+      <div class="section-heading"><h3>Search results</h3><span>{{ results().length }}</span></div>
+      @if (loading()) {
+        <p class="muted">Searching the tenant directory...</p>
+      } @else if (results().length) {
+        <ul class="identity-list">
+          @for (identity of results(); track identity.id) {
+            <li><button class="identity-row" type="button" (click)="openIdentity(identity)">
+              <span class="identity-row__avatar">{{ displayName(identity).slice(0, 1).toUpperCase() }}</span>
+              <span class="identity-row__copy"><strong>{{ displayName(identity) }}</strong><span>{{ identity.name || identity.id }}</span>@if (identity.email) { <small>{{ identity.email }}</small> }</span>
+              <span class="identity-row__arrow" aria-hidden="true">›</span>
+            </button></li>
+          }
+        </ul>
+      } @else if (hasSearched()) {
+        <p class="muted">No matching identities found. Try another name, email, or identity field value.</p>
+      } @else {
+        <p class="muted">Search by a name, email, or identity field value.</p>
+      }
+      @if (recent().length) {
+        <div class="recent"><div class="section-heading"><h3>Recently viewed</h3><span>THIS SESSION</span></div><ul>
+          @for (identity of recent(); track identity.id) { <li><button type="button" (click)="openIdentity(identity)">{{ displayName(identity) }}</button></li> }
+        </ul></div>
+      }
+    </section>
+  }
+</section>

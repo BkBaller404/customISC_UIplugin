@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "manifest": {
+        "alias": "customuiplugin",
+        "name": {
+            "en": "CustomUIPlugin"
+        },
+        "description": {
+            "en": "Identity search, account details, and workflow tools for Identity Security Cloud"
+        },
+        "apiScopes": [
+            "sp:scopes:all"
+        ],
+        "contentSecurityPolicies": {},
+        "permissionPolicy": {},
+        "iframeAllow": {},
+        "state": "ENABLED",
+        "slots": [
+            {
+                "slotId": "full-page"
+            }
+        ]
+    },
+    "build": {
+        "outDir": "./dist/customuiplugin/browser",
+        "port": 4200
+    }
+}
